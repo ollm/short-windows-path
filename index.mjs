@@ -293,7 +293,8 @@ var shortPathCache = {};
 
 export async function generate(path, force = false)
 {
-	let pathLength = baseLength = path.length;
+	let baseLength = path.length;
+	let pathLength = baseLength;
 
 	if((pathLength >= 260 || force) && process.platform == 'win32')
 	{
@@ -367,7 +368,8 @@ export async function generate(path, force = false)
 
 export function generateSync(path, force = false)
 {
-	let pathLength = baseLength = path.length;
+	let baseLength = path.length;
+	let pathLength = baseLength;
 
 	if((pathLength >= 260 || force) && process.platform == 'win32')
 	{
