@@ -1,0 +1,41 @@
+{
+  "name": "short-windows-path",
+  "version": "1.0.0",
+  "description": "Converts a Windows path to 8.3 short path",
+  "main": "index.mjs",
+  "type": "module",
+  "exports": {
+    "import": "./index.mjs",
+    "require": "./index.cjs"
+  },
+  "author": {
+    "name": "Oleguer Llopart",
+    "email": "oleguer.llopart.mora@gmail.com",
+    "url": "https://github.com/ollm"
+  },
+  "homepage": "https://github.com/ollm/short-windows-path#readme",
+  "bugs": {
+    "url": "https://github.com/ollm/short-windows-path/issues"
+  },  
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ollm/short-windows-path.git"
+  },
+  "keywords": [
+    "windows",
+    "path",
+    "filename",
+    "short",
+    "8.3",
+    "8.3 filename",
+    "8.3 path"
+  ],
+  "scripts": {
+    "prepare": "npx rollup index.mjs --file index.cjs --format cjs",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "rollup": "^4.18.0"
+  }
+}
