@@ -243,9 +243,11 @@ var getCache = {};
 
 export async function get(path, force = false)
 {
-	let pathLength = path.length;
+	if(process.platform !== 'win32') return path;
 
-	if((pathLength >= 260 || force) && process.platform == 'win32')
+	const pathLength = path.length;
+
+	if(pathLength >= 260 || force)
 	{
 		if(CACHE_TIME && getCache[path]) return getCache[path];
 
@@ -293,10 +295,12 @@ var shortPathCache = {};
 
 export async function generate(path, force = false)
 {
-	let baseLength = path.length;
+	if(process.platform !== 'win32') return path;
+
+	const baseLength = path.length;
 	let pathLength = baseLength;
 
-	if((pathLength >= 260 || force) && process.platform == 'win32')
+	if(pathLength >= 260 || force)
 	{
 		if(CACHE_TIME && !shortPathCache[force]) shortPathCache[force] = {};
 		if(CACHE_TIME && shortPathCache[force][path]) return shortPathCache[force][path];
@@ -368,10 +372,12 @@ export async function generate(path, force = false)
 
 export function generateSync(path, force = false)
 {
-	let baseLength = path.length;
+	if(process.platform !== 'win32') return path;
+
+	const baseLength = path.length;
 	let pathLength = baseLength;
 
-	if((pathLength >= 260 || force) && process.platform == 'win32')
+	if(pathLength >= 260 || force)
 	{
 		if(CACHE_TIME && !shortPathCache[force]) shortPathCache[force] = {};
 		if(CACHE_TIME && shortPathCache[force][path]) return shortPathCache[force][path];

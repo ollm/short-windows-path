@@ -1,6 +1,6 @@
 {
   "name": "short-windows-path",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Converts a Windows path to 8.3 short path",
   "main": "index.mjs",
   "type": "module",
