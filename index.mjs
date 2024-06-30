@@ -293,7 +293,7 @@ var shortPathCache = {};
 
 export async function generate(path, force = false)
 {
-	let pathLength = path.length;
+	let pathLength = baseLength = path.length;
 
 	if((pathLength >= 260 || force) && process.platform == 'win32')
 	{
@@ -316,7 +316,6 @@ export async function generate(path, force = false)
 				if(!CACHE_TIME || !shortPathCache[force][original])
 				{
 					segment = await shortSegment(newPath, segment);
-					pathLength -= segmentLength - segment.length;
 
 					const shorted = p.join(newPath, segment);
 
@@ -340,6 +339,8 @@ export async function generate(path, force = false)
 				{
 					newPath = shortPathCache[force][original];
 				}
+
+				pathLength = baseLength - (original.length - newPath.length);
 			}
 			else
 			{
@@ -366,7 +367,7 @@ export async function generate(path, force = false)
 
 export function generateSync(path, force = false)
 {
-	let pathLength = path.length;
+	let pathLength = baseLength = path.length;
 
 	if((pathLength >= 260 || force) && process.platform == 'win32')
 	{
@@ -389,7 +390,6 @@ export function generateSync(path, force = false)
 				if(!CACHE_TIME || !shortPathCache[force][original])
 				{
 					segment = shortSegmentSync(newPath, segment);
-					pathLength -= segmentLength - segment.length;
 
 					const shorted = p.join(newPath, segment);
 
@@ -413,6 +413,8 @@ export function generateSync(path, force = false)
 				{
 					newPath = shortPathCache[force][original];
 				}
+
+				pathLength = baseLength - (original.length - newPath.length);
 			}
 			else
 			{
