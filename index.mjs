@@ -164,11 +164,11 @@ function existsSync(path)
 
 var statCache = {};
 
-function statSync(path)
+async function stat(path)
 {
 	if(statCache[path] !== undefined) return statCache[path];
 
-	const stat = fs.statSync(path);
+	const stat = await fs.promises.stat(path);
 
 	if(CACHE_TIME)
 	{
@@ -184,11 +184,11 @@ function statSync(path)
 	return stat;
 }
 
-async function stat(path)
+function statSync(path)
 {
 	if(statCache[path] !== undefined) return statCache[path];
 
-	const stat = await fs.promises.stat(path);
+	const stat = fs.statSync(path);
 
 	if(CACHE_TIME)
 	{

@@ -8,15 +8,11 @@
     "import": "./index.mjs",
     "require": "./index.cjs"
   },
-  "author": {
-    "name": "Oleguer Llopart",
-    "email": "oleguer.llopart.mora@gmail.com",
-    "url": "https://github.com/ollm"
-  },
+  "author": "Oleguer Llopart <oleguer.llopart.mora@gmail.com> (https://github.com/ollm)",
   "homepage": "https://github.com/ollm/short-windows-path#readme",
   "bugs": {
     "url": "https://github.com/ollm/short-windows-path/issues"
-  },  
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
