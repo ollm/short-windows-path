@@ -40,7 +40,7 @@ const fs = require('fs');
 const p = require('path');
 const shortWindowsPath = require('short-windows-path');
 
-shortWindowsPath.setCacheTime(5000); // Milliseconds
+shortWindowsPath.setCacheTime(5000); // In milliseconds
 
 // Using shortWindowsPath.generate
 (async function(){
@@ -112,7 +112,7 @@ shortWindowsPath.setCacheTime(5000); // Milliseconds
 
 ### setCacheTime
 
-Set the cache time, some data is cached to optimize the generation of the short path and reduce disk reads, the cache can produce unexpected results in some cases if it is being written to the folder.
+Set the cache time, some data is cached to optimize the generation of the short path and reduce disk reads, the cache may result in not generating the full short path of newly created folder/files if a short path has been generated in the same place recently.
 
 ```js
 const shortPath = shortWindowsPath.setCacheTime(Int time = 10000);
