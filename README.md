@@ -131,7 +131,7 @@ const shortPath = await shortWindowsPath.generate(String path, Boolean force = f
 
 ### generateSync
 
-Try to generate the short path and check that it exists synchronously, this method is faster than `shortWindowsPath.get` but may not get the short path for some folder/files, also uses various read functions to generate the path (`fs.readdir`, `fs.stat` and `fs.existsSync`)
+Try to generate the short path and check that it exists synchronously, this method is faster than `shortWindowsPath.get` but may not get the short path for some folder/files, also uses various read functions to generate the path (`fs.readdirSync`, `fs.statSync` and `fs.existsSync`)
 
 ```js
 const shortPath = shortWindowsPath.generateSync(String path, Boolean force = false);
