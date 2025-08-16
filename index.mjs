@@ -12,8 +12,10 @@ function extract(code, string, value = 1)
 
 function splitPath(path)
 {
+	// return path.split(p.sep).filter(Boolean);
+
 	const first = extract(/^([\\\/]*[^\\\/]+)[\\\/]*/, path);
-	const segments = path.replace(/^([\\\/]*[^\\\/]+)[\\\/]*/, '').split(p.sep).filter(i => i);
+	const segments = path.replace(/^([\\\/]*[^\\\/]+)[\\\/]*/, '').split(p.sep).filter(Boolean);
 
 	segments.unshift(first);
 
@@ -36,7 +38,7 @@ function generateExt(segment)
 	return (ext.length > 1 ? ext : '');
 }
 
-var shortSegmentCache = {};
+var shortSegmentCache = new Map();
 
 async function shortSegment(path, segment)
 {
@@ -46,16 +48,20 @@ async function shortSegment(path, segment)
 
 	let shortSegment;
 
-	if(CACHE_TIME && shortSegmentCache[path])
+	const _shortSegmentCache = getCache(shortSegmentCache, path);
+
+	if(_shortSegmentCache)
 	{
-		shortSegment = short+'~'+shortSegmentCache[path][segment]+(ext ? ext : '');
+		shortSegment = short+'~'+_shortSegmentCache.get(segment)+(ext ? ext : '');
 	}
 	else
 	{
-		shortSegmentCache[path] = {};
+		const map = new Map();
+		setCache(shortSegmentCache, path, map);
 
-		const files = await fs.promises.readdir(path);
-		const shorts = {};
+		const fixedPath = path.endsWith(p.sep) ? path : path + p.sep;
+		const files = await fs.promises.readdir(fixedPath);
+		const shorts = new Map();
 
 		for(let i = 0, len = files.length; i < len; i++)
 		{
@@ -65,24 +71,21 @@ async function shortSegment(path, segment)
 			const _ext = generateExt(file);
 			const key = _short+_ext;
 
-			if(!shorts[key]) shorts[key] = 1;
-			shortSegmentCache[path][file] = shorts[key];
-			shorts[key]++;
+			const num = (shorts.get(key) || 0) + 1;
+
+			map.set(file, num);
+			shorts.set(key, num);
 		}
 
-		shortSegment = short+'~'+shortSegmentCache[path][segment]+(ext ? ext : '');
+		shortSegment = short+'~'+map.get(segment)+(ext ? ext : '');
 
 		if(CACHE_TIME)
 		{
-			setTimeout(function(){
-
-				delete shortSegmentCache[path];
-
-			}, CACHE_TIME);
+			scheduleCleanup();
 		}
 		else
 		{
-			shortSegmentCache = {};
+			shortSegmentCache.clear();
 		}
 	}
 
@@ -97,16 +100,20 @@ function shortSegmentSync(path, segment)
 
 	let shortSegment;
 
-	if(CACHE_TIME && shortSegmentCache[path])
+	const _shortSegmentCache = getCache(shortSegmentCache, path);
+
+	if(_shortSegmentCache)
 	{
-		shortSegment = short+'~'+shortSegmentCache[path][segment]+(ext ? ext : '');
+		shortSegment = short+'~'+_shortSegmentCache.get(segment)+(ext ? ext : '');
 	}
 	else
 	{
-		shortSegmentCache[path] = {};
+		const map = new Map();
+		setCache(shortSegmentCache, path, map);
 
-		const files = fs.readdirSync(path);
-		const shorts = {};
+		const fixedPath = path.endsWith(p.sep) ? path : path + p.sep;
+		const files = fs.readdirSync(fixedPath);
+		const shorts = new Map();
 
 		for(let i = 0, len = files.length; i < len; i++)
 		{
@@ -116,90 +123,60 @@ function shortSegmentSync(path, segment)
 			const _ext = generateExt(file);
 			const key = _short+_ext;
 
-			if(!shorts[key]) shorts[key] = 1;
-			shortSegmentCache[path][file] = shorts[key];
-			shorts[key]++;
+			const num = (shorts.get(key) || 0) + 1;
+
+			map.set(file, num);
+			shorts.set(key, num);
 		}
 
-		shortSegment = short+'~'+shortSegmentCache[path][segment]+(ext ? ext : '');
+		shortSegment = short+'~'+map.get(segment)+(ext ? ext : '');
 
 		if(CACHE_TIME)
 		{
-			setTimeout(function(){
-
-				delete shortSegmentCache[path];
-
-			}, CACHE_TIME);
+			scheduleCleanup();
 		}
 		else
 		{
-			shortSegmentCache = {};
+			shortSegmentCache.clear();
 		}
 	}
 
 	return shortSegment;
 }
 
-var existsCache = {};
+var existsCache = new Map();
 
 function existsSync(path)
 {
-	if(existsCache[path] !== undefined) return existsCache[path];
+	const _exists = getCache(existsCache, path);
+	if(_exists !== null) return _exists;
 
 	const exists = fs.existsSync(path);
-
-	if(CACHE_TIME)
-	{
-		existsCache[path] = exists;
-
-		setTimeout(function(){
-
-			delete existsCache[path];
-
-		}, CACHE_TIME);
-	}
+	setCache(existsCache, path, exists);
 
 	return exists;
 }
 
-var statCache = {};
+var statCache = new Map();
 
 async function stat(path)
 {
-	if(statCache[path] !== undefined) return statCache[path];
+	const _stat = getCache(statCache, path);
+	if(_stat !== null) return _stat;
 
 	const stat = await fs.promises.stat(path);
-
-	if(CACHE_TIME)
-	{
-		statCache[path] = stat;
-
-		setTimeout(function(){
-
-			delete statCache[path];
-
-		}, CACHE_TIME);
-	}
+	setCache(statCache, path, stat);
 
 	return stat;
 }
 
 function statSync(path)
 {
-	if(statCache[path] !== undefined) return statCache[path];
+	const _stat = getCache(statCache, path);
+	if(_stat !== null) return _stat;
 
 	const stat = fs.statSync(path);
-
-	if(CACHE_TIME)
-	{
-		statCache[path] = stat;
-
-		setTimeout(function(){
-
-			delete statCache[path];
-
-		}, CACHE_TIME);
-	}
+	setCache(statCache, path, stat);
 
 	return stat;
 }
@@ -239,7 +216,7 @@ export function setCacheTime(time)
 	CACHE_TIME = time;
 }
 
-var getCache = {};
+var _getCache = new Map();
 
 export async function get(path, force = false)
 {
@@ -249,7 +226,8 @@ export async function get(path, force = false)
 
 	if(pathLength >= 260 || force)
 	{
-		if(CACHE_TIME && getCache[path]) return getCache[path];
+		const cache = getCache(_getCache, path);
+		if(cache) return cache;
 
 		const command = `for %I in ("${path}") do @echo %~sI`;
 
@@ -268,18 +246,7 @@ export async function get(path, force = false)
 				else
 				{
 					const newPath = stdout.trim();
-					
-					if(CACHE_TIME)
-					{
-						getCache[path] = newPath;
-
-						setTimeout(function(){
-
-							delete getCache[path];
-
-						}, CACHE_TIME);
-					}
-
+					setCache(_getCache, path, newPath);
 					resolve(newPath);
 				}
 
@@ -291,19 +258,41 @@ export async function get(path, force = false)
 	return path;
 }
 
-var shortPathCache = {};
+var shortPathCache = new Map();
+
+shortPathCache.set(false, new Map());
+shortPathCache.set(true, new Map());
+
+function getCache(map, key)
+{
+	if(!CACHE_TIME)
+		return null;
+
+	const cache = map.get(key);
+	return cache && (Date.now() - cache[1] < CACHE_TIME) ? cache[0] : null;
+}
+
+function setCache(map, key, value)
+{
+	if(CACHE_TIME)
+	{
+		map.set(key, [value, Date.now()]);
+		scheduleCleanup();
+	}
+}
 
 export async function generate(path, force = false)
 {
 	if(process.platform !== 'win32') return path;
 
+	const now = Date.now();
 	const baseLength = path.length;
 	let pathLength = baseLength;
 
 	if(pathLength >= 260 || force)
 	{
-		if(CACHE_TIME && !shortPathCache[force]) shortPathCache[force] = {};
-		if(CACHE_TIME && shortPathCache[force][path]) return shortPathCache[force][path];
+		const cachePath = getCache(shortPathCache.get(force), path);
+		if(cachePath) return cachePath;
 
 		const segments = splitPath(path);
 		const len = segments.length;
@@ -318,7 +307,9 @@ export async function generate(path, force = false)
 			if(segmentLength > 8 && (pathLength >= 260 || force) && existsSync(newPath))
 			{
 				const original = p.join(newPath, segment);
-				if(!CACHE_TIME || !shortPathCache[force][original])
+				const cachePathSegment = getCache(shortPathCache.get(force), original);
+
+				if(!cachePathSegment)
 				{
 					segment = await shortSegment(newPath, segment);
 
@@ -329,20 +320,11 @@ export async function generate(path, force = false)
 					else
 						newPath = original;
 
-					if(CACHE_TIME)
-					{
-						shortPathCache[force][original] = newPath;
-
-						setTimeout(function(){
-
-							delete shortPathCache[force][original];
-
-						}, CACHE_TIME);
-					}
+					setCache(shortPathCache.get(force), original, newPath);
 				}
 				else
 				{
-					newPath = shortPathCache[force][original];
+					newPath = cachePathSegment;
 				}
 
 				pathLength = baseLength - (original.length - newPath.length);
@@ -353,16 +335,7 @@ export async function generate(path, force = false)
 			}
 		}
 
-		if(CACHE_TIME)
-		{
-			shortPathCache[force][path] = newPath;
-
-			setTimeout(function(){
-
-				delete shortPathCache[force][path];
-
-			}, CACHE_TIME);
-		}
+		setCache(shortPathCache.get(force), path, newPath);
 
 		return newPath;
 	}
@@ -374,13 +347,14 @@ export function generateSync(path, force = false)
 {
 	if(process.platform !== 'win32') return path;
 
+	const now = Date.now();
 	const baseLength = path.length;
 	let pathLength = baseLength;
 
 	if(pathLength >= 260 || force)
 	{
-		if(CACHE_TIME && !shortPathCache[force]) shortPathCache[force] = {};
-		if(CACHE_TIME && shortPathCache[force][path]) return shortPathCache[force][path];
+		const cachePath = getCache(shortPathCache.get(force), path);
+		if(cachePath) return cachePath;
 
 		const segments = splitPath(path);
 		const len = segments.length;
@@ -395,7 +369,9 @@ export function generateSync(path, force = false)
 			if(segmentLength > 8 && (pathLength >= 260 || force) && existsSync(newPath))
 			{
 				const original = p.join(newPath, segment);
-				if(!CACHE_TIME || !shortPathCache[force][original])
+				const cachePathSegment = getCache(shortPathCache.get(force), original);
+
+				if(!cachePathSegment)
 				{
 					segment = shortSegmentSync(newPath, segment);
 
@@ -406,20 +382,11 @@ export function generateSync(path, force = false)
 					else
 						newPath = original;
 
-					if(CACHE_TIME)
-					{
-						shortPathCache[force][original] = newPath;
-
-						setTimeout(function(){
-
-							delete shortPathCache[force][original];
-
-						}, CACHE_TIME);
-					}
+					setCache(shortPathCache.get(force), original, newPath);
 				}
 				else
 				{
-					newPath = shortPathCache[force][original];
+					newPath = cachePathSegment;
 				}
 
 				pathLength = baseLength - (original.length - newPath.length);
@@ -430,19 +397,59 @@ export function generateSync(path, force = false)
 			}
 		}
 
-		if(CACHE_TIME)
-		{
-			shortPathCache[force][path] = newPath;
-
-			setTimeout(function(){
-
-				delete shortPathCache[force][path];
-
-			}, CACHE_TIME);
-		}
+		setCache(shortPathCache.get(force), path, newPath);
 
 		return newPath;
 	}
 
 	return path;
+}
+
+function cleanup(map)
+{
+	const now = Date.now();
+	const keys = map.keys();
+
+	for(const key of keys)
+	{
+		const cache = map.get(key);
+
+		if(now - cache[1] >= CACHE_TIME)
+			map.delete(key);
+	}
+}
+
+export const maps = [
+	shortPathCache.get(false),
+	shortPathCache.get(true),
+	shortSegmentCache,
+	existsCache,
+	statCache,
+	_getCache,
+]
+
+function _scheduleCleanup()
+{
+	let stillToDelete = false;
+
+	for(const map of maps)
+	{
+		cleanup(map);
+
+		if(map.size !== 0)
+			stillToDelete = true;
+	}
+
+	timeout = false;
+
+	if(stillToDelete)
+		scheduleCleanup();
+}
+
+var timeout = false;
+
+function scheduleCleanup()
+{
+	if(timeout === false)
+		timeout = setTimeout(_scheduleCleanup, CACHE_TIME);
 }
