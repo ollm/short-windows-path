@@ -1,4 +1,5 @@
 node_modules/
+index.cjs
 
 # OSX
 .DS_Store
